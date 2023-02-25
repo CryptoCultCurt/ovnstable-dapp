@@ -8,8 +8,19 @@
             <th class="table-header-payouts-strategy text-right" v-if="!minimized">
                 Daily profit{{ minimized ? '' : (profitLabel ? ', ' + profitLabel : '')}}
             </th>
-            <th v-if="(payoutData && payoutData[0]) ? payoutData[0].annualizedYield : false" class="table-header-payouts-strategy text-right" :colspan="minimized ? 2 : 1">
-                Annualized yield{{ minimized ? '' : ', % per year'}}
+
+            <th v-if="(payoutData && payoutData[0]) ? payoutData[0].comp : false" class="table-header-payouts-strategy text-right" :colspan="minimized ? 2 : 1">
+              <div class="return-container">
+                <label>
+                  Cumulative return
+                </label>
+
+                <div class="tooltip-compound">
+                  <v-row align="center" justify="end">
+                    <Tooltip :size="16" :icon-color="light ? '#ADB3BD' :  '#707A8B'" text="Cumulative return since inception date"/>
+                  </v-row>
+                </div>
+              </div>
             </th>
             <th class="table-header-payouts-strategy text-right" width="180px" v-if="!minimized">
                 Explorer
@@ -30,9 +41,9 @@
             <td class="table-label-payouts-strategy text-right" v-if="!minimized">
                 $ {{ $utils.formatMoney(item.dailyProfit, 6) }}
             </td>
-            <td v-if="item.annualizedYield" class="table-label-payouts-strategy text-right">
-                <label :class="item.annualizedYield > 0 ? 'yield-green' : 'yield-red'">
-                    {{ $utils.formatMoney(item.annualizedYield, 1) }}%
+            <td v-if="item.comp" class="table-label-payouts-strategy text-right">
+                <label :class="item.comp >= 0 ? 'yield-green' : 'yield-red'">
+                    {{ $utils.formatMoney(item.comp, 2) }}%
                 </label>
             </td>
             <td class="table-label-payouts-strategy text-right" v-if="!minimized">
@@ -54,13 +65,14 @@
 <script>
 
 import {mapGetters} from "vuex";
+import Tooltip from "@/components/common/element/Tooltip";
 
 /* eslint-disable no-unused-vars,no-undef */
 
 export default {
     name: "Table",
 
-    components: {},
+    components: {Tooltip},
 
     data: () => ({}),
 
@@ -77,12 +89,13 @@ export default {
 
         payoutData: {
             type: Array,
-            default: [],
+            default: () => {},
         },
     },
 
     computed: {
         ...mapGetters('network', ['explorerUrl']),
+        ...mapGetters('theme', ['light']),
     },
 
     methods: {
@@ -111,7 +124,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 
 /* mobile */
 @media only screen and (max-width: 960px) {
@@ -289,5 +302,15 @@ only screen and (                min-resolution: 2dppx)  and (min-width: 1300px)
 
 .link-label {
     display: inline-flex !important;
+}
+
+.tooltip-compound {
+  position: relative;
+  right: -7px;
+  bottom: 4px
+}
+
+.return-container {
+  position: relative;
 }
 </style>
