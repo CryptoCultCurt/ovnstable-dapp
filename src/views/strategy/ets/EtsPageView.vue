@@ -26,7 +26,7 @@
     <div v-else class="mt-1">
       <v-row align="start" justify="start" class="main-container ma-0">
         <v-col :cols="$wu.isFull() ? 9 : 12" :class="$wu.isFull() ? 'ml-n3' : ''">
-          <StrategyBanner :ets-data="etsData"/>
+          <StrategyBanner :ets-data="etsData" :ets-strategy-data="etsStrategyData"/>
 
           <v-row align="center" justify="start" class="ma-0 mt-5" v-if="!$wu.isFull()">
             <v-btn class="header-btn btn-filled-red" @click="showRiskModal">
@@ -69,6 +69,17 @@
                 <template v-if="networkSupport">
                   <v-row align="center" justify="center" class="ma-0 mx-3" :class="$wu.isMobile() ? 'mt-10' : 'mt-12'" v-if="!isOvercapAvailable && this.etsData.maxSupply && totalSupply[etsData.name] >= etsData.maxSupply">
                     <label class="full-status-error-label">TVL > ${{ $utils.formatMoneyComma(etsData.maxSupply, 0) }}. Please check status later.</label>
+                  </v-row>
+
+                  <v-row v-if="isShowGalxeInfo" align="center" justify="center" class="mt-6 px-5">
+                    <v-row class="galxe-container">
+                      <v-col>
+                        To mint this ETS, you need to have NFT in your wallet.
+                      </v-col>
+                      <v-btn class="header-btn btn-investor-invest btn-investor-outline" outlined @click="openGalaxeCompany">
+                        GET NFT ON GALXE
+                      </v-btn>
+                    </v-row>
                   </v-row>
 
                   <v-row align="center" justify="center" class="ma-0" :class="(!isOvercapAvailable && this.etsData.maxSupply && totalSupply[etsData.name] >= etsData.maxSupply) ? 'mt-2' : 'mt-12'">
@@ -173,7 +184,18 @@
                     <label class="full-status-error-label">TVL > ${{ $utils.formatMoneyComma(etsData.maxSupply, 0) }}. Please check status later.</label>
                   </v-row>
 
-                  <v-row align="center" justify="center" :class="(!isOvercapAvailable && this.etsData.maxSupply && totalSupply[etsData.name] >= etsData.maxSupply)? 'mt-5' : 'mt-15'">
+                  <v-row v-if="isShowGalxeInfo" align="center" justify="center" class="mt-6">
+                   <v-row class="galxe-container">
+                     <v-col>
+                       To mint this ETS, you need to have NFT in your wallet.
+                     </v-col>
+                     <v-btn class="header-btn btn-investor-invest btn-investor-outline" outlined @click="openGalaxeCompany">
+                       GET NFT ON GALXE
+                     </v-btn>
+                   </v-row>
+                  </v-row>
+
+                  <v-row align="center" justify="center" :class="(!isOvercapAvailable && this.etsData.maxSupply && totalSupply[etsData.name] >= etsData.maxSupply)? 'mt-5' : 'mt-12'">
                     <v-btn class="header-btn btn-investor-invest" :class="(this.etsData.disabled || (!isOvercapAvailable && this.etsData.maxSupply && totalSupply[etsData.name] >= etsData.maxSupply)) ? 'disabled-btn' : ''" :disabled="this.etsData.disabled || (!isOvercapAvailable && this.etsData.maxSupply && totalSupply[etsData.name] >= etsData.maxSupply)" @click="mintAction">
                       MINT ETS {{ etsData.nameUp }}
                     </v-btn>
@@ -252,6 +274,8 @@ import AboutTab from "@/views/strategy/ets/tab/AboutTab";
 import PerformanceTab from "@/views/strategy/ets/tab/PerformanceTab";
 import moment from "moment/moment";
 import {axios} from "@/plugins/http-axios";
+import network from "@/store/modules/common/web3/network";
+import loadJSON from "@/utils/http-utils";
 
 export default {
   name: "EtsPageView",
@@ -279,17 +303,24 @@ export default {
 
     minMintFee: null,
     minRedeemFee: null,
+
+    galxeNetworkList: [],
+    isClientExistNftForGalxe: false,
   }),
 
 
   computed: {
-    ...mapGetters('network', ['networkId', 'polygonConfig', 'opConfig', 'bscConfig']),
+    ...mapGetters('network', ['networkId', 'networkName', 'polygonConfig', 'opConfig', 'bscConfig', 'arConfig']),
     ...mapGetters('accountData', ['etsBalance', 'account']),
     ...mapGetters('supplyData', ['totalSupply']),
     ...mapGetters('etsAction', ['etsList']),
     ...mapGetters('overcapData', ['isOvercapAvailable']),
     ...mapGetters('magicEye', ['dataHidden']),
     ...mapGetters('web3', ['web3', 'contracts']),
+
+    isShowGalxeInfo() {
+      return this.galxeNetworkList.indexOf(this.networkId) >= 0 && (!this.account || !this.isClientExistNftForGalxe);
+    },
 
     isAllDataLoaded: function () {
       return !this.isClientDataLoading && !this.isEtsStrategyDataLoading && !this.isUsdPlusApyDataLoading;
@@ -362,10 +393,24 @@ export default {
     etsList: function (newVal, oldVal) {
       this.loadData();
     },
+
+    account: function (newVal, oldVal) {
+      if (newVal) {
+        this.checkGalxeNft();
+      }
+    },
+
+    networkId: function () {
+      this.checkGalxeNft();
+    }
   },
   mounted() {
     if (this.etsList) {
       this.loadData();
+    }
+
+    if (this.account) {
+      this.checkGalxeNft();
     }
   },
 
@@ -391,6 +436,33 @@ export default {
       this.$router.push(id);
     },
 
+    openGalaxeCompany() {
+      window.open("https://galxe.com/overnight/campaign/GCnGLU4ywn", '_target')
+    },
+
+    async checkGalxeNft() {
+      if (this.galxeNetworkList.indexOf(this.networkId) < 0) {
+        console.log('checkGalxeNft not needed', this.networkId);
+        return;
+      }
+
+      this.isClientExistNftForGalxe = false;
+
+      try {
+        let account = this.account;
+
+        let abiFile = await loadJSON(`/contracts/${this.networkName}/Nft.json`);
+        let nftContract = new this.web3.eth.Contract(abiFile.abi, abiFile.address);
+
+        let isNftExist = await nftContract.methods.balanceOf(account).call() * 1;
+        console.log("Is nft exist response: ", isNftExist);
+        this.isClientExistNftForGalxe = !!isNftExist; // to boolean and a = b
+      } catch (e) {
+        console.log("Is nft exist response error: ", this.networkId, this.networkName, e);
+        this.isClientExistNftForGalxe = false;
+      }
+    },
+
     mintAction() {
       this.showMintView();
       this.showInvestModal(this.etsData);
@@ -403,6 +475,8 @@ export default {
 
     updateEtsData() {
       if (this.etsList) {
+
+        // console.log("Ets loading eps page: ", )
         let resultList = this.etsList.filter(ets => ets.name === this.$route.params.name);
         this.etsData = (resultList && resultList.length > 0) ? resultList[0] : {};
       }
@@ -453,6 +527,9 @@ export default {
           break;
         case 56:
           appApiUrl = this.opConfig.appApiUrl;
+          break;
+        case 42161:
+          appApiUrl = this.arConfig.appApiUrl;
           break;
         default:
           appApiUrl = this.polygonConfig.appApiUrl;
@@ -570,7 +647,7 @@ export default {
       this.isUsdPlusApyDataLoading = true;
 
       await Promise.all(
-          ['polygon', 'bsc', 'optimism'].map(async network => {
+          ['polygon', 'bsc', 'optimism', 'arbitrum'].map(async network => {
 
             let appApiUrl;
 
@@ -579,10 +656,13 @@ export default {
                 appApiUrl = this.polygonConfig.appApiUrl;
                 break;
               case "bsc":
-                appApiUrl = this.opConfig.appApiUrl;
+                appApiUrl = this.bscConfig.appApiUrl;
                 break;
               case "optimism":
-                appApiUrl = this.polygonConfig.appApiUrl;
+                appApiUrl = this.opConfig.appApiUrl;
+                break;
+              case "arbitrum":
+                appApiUrl = this.arConfig.appApiUrl;
                 break;
             }
 
@@ -635,6 +715,9 @@ export default {
           break;
         case 56:
           appApiUrl = this.opConfig.appApiUrl;
+          break;
+        case 42161:
+          appApiUrl = this.arConfig.appApiUrl;
           break;
         default:
           appApiUrl = this.polygonConfig.appApiUrl;
@@ -1211,6 +1294,16 @@ only screen and (                min-resolution: 2dppx)  and (min-width: 1300px)
   font-family: 'Roboto', sans-serif;
   font-feature-settings: 'pnum' on, 'lnum' on;
   color: #CF3F92;
+}
+
+.galxe-container {
+  background: rgba(28, 149, 231, 0.1);
+  border-radius: 8px;
+
+  margin-top: 12px;
+  padding: 10px;
+
+  color: var(--secondary-gray-text);
 }
 </style>
 

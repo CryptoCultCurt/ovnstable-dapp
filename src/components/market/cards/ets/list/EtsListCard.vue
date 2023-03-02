@@ -34,12 +34,12 @@
         </v-col>
         <v-col :cols="$wu.isFull() ? 1 : ($wu.isMobile() ? 3 : 1)" class="my-1">
             <v-row class="ma-0" justify="start" align="center">
-                <label class="card-label">{{ cardData.lastApy === 0 ? '' : ($utils.formatMoneyComma(cardData.lastApy, 0) + '%') }}</label>
+                <label class="card-label">{{ (cardData.lastApy > 0) ? ($utils.formatMoneyComma(cardData.lastApy, 0) + '%') : '0%' }}</label>
             </v-row>
         </v-col>
         <v-col :cols="$wu.isFull() ? 1 : ($wu.isMobile() ? 3 : 1)" class="my-1">
             <v-row class="ma-0" justify="start" align="center">
-                <label class="card-label">{{ cardData.monthApy === 0 ? '' : ($utils.formatMoneyComma(cardData.monthApy, 0) + '%') }}</label>
+                <label class="card-label">{{ (cardData.monthApy > 0) ? ($utils.formatMoneyComma(cardData.monthApy, 0) + '%') : '0%' }}</label>
             </v-row>
         </v-col>
         <v-col v-if="!$wu.isMobile()" cols="3" class="my-1" style="max-width: 269px">
@@ -84,7 +84,7 @@
                     <v-btn x-small
                            width="105px"
                            max-width="105px"
-                           v-if="!cardData.data.disabled && (isOvercapAvailable || (!cardData.isPrototype &&  !(cardData.overcapEnabled && cardData.data.maxSupply && totalSupply[cardData.data.name] >= cardData.data.maxSupply)))"
+                           v-if="!cardData.data.disabled && (isOvercapAvailable || (!cardData.prototype &&  !(cardData.overcapEnabled && cardData.data.maxSupply && totalSupply[cardData.data.name] >= cardData.data.maxSupply)))"
                            class="button btn-outlined"
                            @click.stop="mintAction" outlined>
                         MINT/REDEEM
@@ -188,7 +188,7 @@
                 <v-col v-if="networkSupport">
                     <v-row justify="start" align="center">
                         <v-btn x-small
-                               v-if="!cardData.data.disabled && (isOvercapAvailable || (!cardData.isPrototype &&  !(cardData.overcapEnabled && cardData.data.maxSupply && totalSupply[cardData.data.name] >= cardData.data.maxSupply)))"
+                               v-if="!cardData.data.disabled && (isOvercapAvailable || (!cardData.prototype && !(cardData.overcapEnabled && cardData.data.maxSupply && totalSupply[cardData.data.name] >= cardData.data.maxSupply)))"
                                class="button btn-filled"
                                @click.stop="mintAction" outlined>
                             MINT/REDEEM
@@ -241,7 +241,7 @@ export default {
     },
 
     computed: {
-        ...mapGetters('network', ['networkId']),
+        ...mapGetters('network', ['networkId', 'networkName']),
         ...mapGetters("marketData", ["etsStrategyData"]),
         ...mapGetters("supplyData", ["totalSupply"]),
         ...mapGetters('accountData', ['etsBalance']),
@@ -252,7 +252,7 @@ export default {
         },
 
         networkSupport: function () {
-            return this.networkId === this.cardData.chain;
+            return this.networkName.toLowerCase() === this.cardData.chain.toLowerCase();
         },
     },
 

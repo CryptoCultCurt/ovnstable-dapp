@@ -210,6 +210,7 @@ import SuccessModal from "@/components/common/modal/action/SuccessModal";
 import BN from "bn.js";
 import polygonIcon from "@/assets/network/polygon.svg";
 import optimismIcon from "@/assets/network/op.svg";
+import arbitrumIcon from "@/assets/network/ar.svg";
 import bscIcon from "@/assets/network/bsc.svg";
 import Tooltip from "@/components/common/element/Tooltip";
 import GasSettingsMenu from "@/components/common/modal/gas/components/GasSettingsMenu";
@@ -269,6 +270,8 @@ export default {
                     return optimismIcon;
                 case 56:
                     return bscIcon;
+                case 42161:
+                    return arbitrumIcon;
             }
         },
 
@@ -288,7 +291,7 @@ export default {
             this.step = 0;
 
             if (!this.account) {
-                return 'Connect to a wallet';
+                return 'Connect wallet';
             } else if (this.transactionPending) {
                 return 'Transaction is pending';
             } else if (this.isBuy) {
@@ -401,6 +404,7 @@ export default {
 
         changeSliderPercent() {
             this.sum = (this.balance.wUsdPlus * (this.sliderPercent / 100.0)).toFixed(this.sliderPercent === 0 ? 0 : 6) + '';
+            this.sum = isNaN(this.sum) ? 0 : this.sum
         },
 
         isNumber: function(evt) {

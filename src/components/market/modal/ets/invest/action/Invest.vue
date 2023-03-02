@@ -17,7 +17,8 @@
                                   class="field-sum"
                                   hide-details
                                   background-color="transparent"
-                                  v-model="sum">
+                                  v-model="sum"
+                                  @input="checkApproveCounter">
                     </v-text-field>
                 </v-row>
             </v-col>
@@ -146,57 +147,103 @@
             </v-col>
         </v-row>
 
-        <v-row class="mt-15" align="center" justify="center">
-            <div class="action-btn-container" v-if="!this.account">
-                <v-btn class='buy enabled-buy'
-                       @click="connectWallet">
-                    {{ buttonLabel }}
-                </v-btn>
-            </div>
+      <div v-if="isGalxNftCheck">
+        <v-row align="center" justify="center" class="py-15">
+          <v-progress-circular
+              width="2"
+              size="24"
+              color="#8FA2B7"
+              indeterminate
+          ></v-progress-circular>
+        </v-row>
+      </div>
+      <div v-else>
 
-            <div class="action-btn-container" v-else>
-                <v-btn v-if="actionAssetApproved"
-                       height="56"
-                       class="buy"
-                       :class="isBuy ? 'enabled-buy' : 'disabled-buy'"
-                       :disabled="!isBuy"
-                       @click="confirmSwapAction">
-                    <v-progress-circular
-                        v-if="transactionPending"
-                        class="mr-2"
-                        width="2"
-                        :size="18"
-                        indeterminate
-                    ></v-progress-circular>
-                    {{ buttonLabel }}
-                </v-btn>
-                <v-btn v-else
-                       height="56"
-                       class="buy"
-                       :class="isBuy ? 'enabled-buy' : 'disabled-buy'"
-                       :disabled="!isBuy"
-                       @click="approveAction">
-                    {{ buttonLabel }}
-                </v-btn>
-            </div>
+
+        <v-row v-if="isShowGalxeInfo" class="mt-15 px-5 pb-5" align="center" justify="center">
+          <v-col>
+            <v-row class="galxe-container">
+              <v-row class="galxe-info" align="center" justify="center">
+                To mint ETS claim “Overnight on Arbitrum” NFT
+              </v-row>
+              <v-row class="mt-5">
+                <div class="action-btn-container">
+                  <v-btn
+                      height="56"
+                      class="buy enabled-buy"
+                      @click="openGalaxeCompany">
+                    click here to claim NFT
+                  </v-btn>
+                </div>
+
+                <div class="action-btn-container mt-5">
+                  <v-btn
+                      height="56"
+                      class="buy disabled-buy"
+                      :disabled="true">
+                    MINT ETS
+                  </v-btn>
+                </div>
+
+              </v-row>
+            </v-row>
+          </v-col>
         </v-row>
 
-        <v-row class="mt-5" :class="$wu.isFull() ? '' : 'mb-4'">
-            <v-slider
-                readonly
-                class="step-slider"
-                color="#1C95E7"
-                track-color="var(--main-border)"
-                track-fill-color="#1C95E7"
-                tick-size="10"
-                min="0"
-                max="2"
-                v-model="step"
-                step="1"
-                ticks
-                :tick-labels="stepLabels"
-            ></v-slider>
+        <v-row v-if="!isShowGalxeInfo" class="mt-15" align="center" justify="center">
+          <div class="action-btn-container" v-if="!this.account">
+            <v-btn class='buy enabled-buy'
+                   @click="connectWallet">
+              {{ buttonLabel }}
+            </v-btn>
+          </div>
+
+          <div class="action-btn-container" v-else>
+            <v-btn v-if="actionAssetApproved"
+                   height="56"
+                   class="buy"
+                   :class="isBuy ? 'enabled-buy' : 'disabled-buy'"
+                   :disabled="!isBuy"
+                   @click="confirmSwapAction">
+              <v-progress-circular
+                  v-if="transactionPending"
+                  class="mr-2"
+                  width="2"
+                  :size="18"
+                  indeterminate
+              ></v-progress-circular>
+              {{ buttonLabel }}
+            </v-btn>
+            <v-btn v-else
+                   height="56"
+                   class="buy"
+                   :class="isBuy ? 'enabled-buy' : 'disabled-buy'"
+                   :disabled="!isBuy"
+                   @click="approveAction">
+              {{ buttonLabel }}
+            </v-btn>
+          </div>
         </v-row>
+
+        <v-row v-if="!isShowGalxeInfo" class="mt-5" :class="$wu.isFull() ? '' : 'mb-4'">
+          <v-slider
+              readonly
+              class="step-slider"
+              color="#1C95E7"
+              track-color="var(--main-border)"
+              track-fill-color="#1C95E7"
+              tick-size="10"
+              min="0"
+              max="2"
+              v-model="step"
+              step="1"
+              ticks
+              :tick-labels="stepLabels"
+          ></v-slider>
+        </v-row>
+
+      </div>
+
 
         <WaitingModal/>
         <SuccessModal/>
@@ -214,10 +261,12 @@ import SuccessModal from "@/components/common/modal/action/SuccessModal";
 import BN from "bn.js";
 import polygonIcon from "@/assets/network/polygon.svg";
 import optimismIcon from "@/assets/network/op.svg";
+import arbitrumIcon from "@/assets/network/ar.svg";
 import bscIcon from "@/assets/network/bsc.svg";
 import {axios} from "@/plugins/http-axios";
 import Tooltip from "@/components/common/element/Tooltip";
 import GasSettingsMenu from "@/components/common/modal/gas/components/GasSettingsMenu";
+import loadJSON from "@/utils/http-utils";
 
 export default {
     name: "Invest",
@@ -243,15 +292,30 @@ export default {
 
         minMintFee: null,
         contractCapacity: null,
+
+        galxeNetworkList: [],
+        isClientExistNftForGalxe: false,
+        isGalxNftCheck: true,
+        sumApproveCheckerId: null,
+        sumApproveCheckerSec: 0
     }),
+    watch: {
+      account: function (newVal, oldVal) {
+        this.checkGalxeNft();
+      },
+
+      networkId: function () {
+        this.checkGalxeNft();
+      },
+    },
 
     computed: {
-        ...mapGetters('accountData', ['balance', 'etsBalance', 'actionAssetBalance', 'account']),
+        ...mapGetters('accountData', ['balance', 'originalBalance', 'etsBalance', 'actionAssetBalance', 'account']),
         ...mapGetters('transaction', ['transactions']),
         ...mapGetters('investModal', ['etsData', 'actionAssetApproved']),
         ...mapGetters('marketData', ['etsStrategyData']),
         ...mapGetters('supplyData', ['totalSupply']),
-        ...mapGetters("network", ['networkId', 'polygonApi']),
+        ...mapGetters("network", ['networkId', 'networkName', 'polygonApi']),
         ...mapGetters("web3", ["web3", 'contracts']),
         ...mapGetters("gasPrice", ["gasPriceGwei", "gasPrice", "gasPriceStation"]),
         ...mapGetters('overcapData', ['isOvercapAvailable', 'walletOvercapLimit']),
@@ -264,7 +328,17 @@ export default {
                     return optimismIcon;
                 case 56:
                     return bscIcon;
+                case 42161:
+                    return arbitrumIcon;
             }
+        },
+
+        isShowGalxeInfo() {
+          if (this.galxeNetworkList.indexOf(this.networkId) >= 0 && !this.account) {
+            return false;
+          }
+
+          return this.galxeNetworkList.indexOf(this.networkId) >= 0 && !this.isClientExistNftForGalxe;
         },
 
         stepLabels: function () {
@@ -319,7 +393,7 @@ export default {
             this.step = 0;
 
             if (!this.account) {
-                return 'Connect to a wallet';
+                return 'Connect wallet';
             } else if (!this.isOvercapAvailable && this.etsData.prototype) {
                 return "ETS is in prototype"
             } else if (this.etsData.disabled) {
@@ -447,12 +521,15 @@ export default {
 
         this.getEntryMinFee();
         this.getContractCapacityValue();
+
+        this.checkGalxeNft();
+
     },
 
     methods: {
 
         ...mapActions("marketData", ['refreshMarket']),
-        ...mapActions("investModal", ['showRedeemView', 'approveActionAsset']),
+        ...mapActions("investModal", ['showRedeemView', 'approveActionAsset', 'disapproveActionAsset']),
 
         ...mapActions("gasPrice", ['refreshGasPrice']),
         ...mapActions("walletAction", ['connectWallet']),
@@ -466,8 +543,41 @@ export default {
 
         ...mapActions("transaction", ['putTransaction', 'loadTransaction']),
 
-        changeSliderPercent() {
+        openGalaxeCompany() {
+          window.open("https://galxe.com/overnight/campaign/GCnGLU4ywn", '_target')
+        },
+
+        async checkGalxeNft() {
+          this.isGalxNftCheck = true;
+          if (this.galxeNetworkList.indexOf(this.networkId) < 0 || !this.account) {
+            console.log('checkGalxeNft not needed', this.networkId);
+            this.isGalxNftCheck = false;
+            return;
+          }
+
+          this.isClientExistNftForGalxe = false;
+
+          try {
+            let account = this.account;
+
+            let abiFile = await loadJSON(`/contracts/${this.networkName}/Nft.json`);
+            let nftContract = new this.web3.eth.Contract(abiFile.abi, abiFile.address);
+
+            let isNftExist = await nftContract.methods.balanceOf(account).call() * 1;
+            console.log("Is nft exist response: ", isNftExist);
+            this.isClientExistNftForGalxe = !!isNftExist; // to boolean and a = b
+            this.isGalxNftCheck = false;
+          } catch (e) {
+            console.log("Is nft exist response error: ", this.networkId, this.networkName, e);
+            this.isClientExistNftForGalxe = false;
+            this.isGalxNftCheck = false;
+          }
+        },
+
+        async changeSliderPercent() {
             this.sum = (this.actionAssetBalance[this.etsData.actionAsset + '_' + this.etsData.actionTokenDecimals] * (this.sliderPercent / 100.0)).toFixed(this.sliderPercent === 0 ? 0 : 6) + '';
+            this.sum = isNaN(this.sum) ? 0 : this.sum
+            await this.checkApprove();
         },
 
         isNumber: function (evt) {
@@ -488,96 +598,179 @@ export default {
         setSum(value) {
             this.sum = value;
         },
+        async checkApproveCounter() {
+          if (!this.sumApproveCheckerId) {
+            // first call
+            this.sumApproveCheckerId = -1;
+            await this.checkApprove();
+            return;
+          }
 
-        max() {
-            let balanceElement = this.balance[this.currency.id];
-            this.sum = balanceElement + "";
-        },
+          this.sumApproveCheckerSec = 0;
+          let intervalId = setInterval(async () => {
+            this.sumApproveCheckerSec++;
 
-        async buyAction() {
-            try {
-
-              if (this.sliderPercent === 100) {
-                this.max();
+            if (this.sumApproveCheckerSec >= 2) {
+              if (this.sumApproveCheckerId === intervalId) {
+                this.sumApproveCheckerSec = 0;
+                try {
+                  await this.checkApprove();
+                } catch (e) {
+                  // ignore
+                } finally {
+                  clearInterval(intervalId)
+                }
+              } else {
+                clearInterval(intervalId)
               }
 
-                let sumInUsd = this.sum;
-                let sum;
+            }
+          }, 1000);
 
-                switch (this.etsData.actionTokenDecimals) {
-                    case 6:
-                        sum = this.web3.utils.toWei(this.sum, 'mwei');
-                        break;
-                    case 8:
-                        sum = this.web3.utils.toWei(this.sum, 'mwei') * 100;
-                        break;
-                    case 18:
-                        sum = this.web3.utils.toWei(this.sum, 'ether');
-                        break;
-                    default:
-                        break;
-                }
+          this.sumApproveCheckerId = intervalId;
+        },
+        async checkApprove() {
+          console.log("Check Approve action", this.sum);
 
-                let contracts = this.contracts;
-                let from = this.account;
-                let self = this;
+          try {
+            if (!this.sum || isNaN(this.sum) || !this.account) {
+              return;
+            }
 
-                try {
-                    await this.refreshGasPrice();
+            let approveSum = this.sum;
 
-                    let buyParams;
+            let sum;
 
-                    if (this.gas == null) {
-                        buyParams = {from: from, gasPrice: this.gasPriceGwei};
-                    } else {
-                        buyParams = {from: from, gasPrice: this.gasPriceGwei, gas: this.gas};
-                    }
+            switch (this.etsData.actionTokenDecimals) {
+              case 6:
+                sum = this.web3.utils.toWei(approveSum, 'mwei');
+                break;
+              case 8:
+                sum = this.web3.utils.toWei(approveSum, 'mwei') * 100;
+                break;
+              case 18:
+                sum = this.web3.utils.toWei(approveSum, 'ether');
+                break;
+              default:
+                break;
+            }
 
-                    let referral = await this.getReferralCode();
-                    let etsActionData = this.etsData;
+            let allowApprove = await this.checkAllowance(sum);
+            console.log("allowApprove : ", allowApprove, sum)
+            if (!allowApprove) {
+              this.disapproveActionAsset();
+              return false;
+            } else {
+              this.approveActionAsset();
+              return true;
+            }
+          } catch (e) {
+            console.error(`Market Invest approve action error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+            this.showErrorModal('approve');
+            this.disapproveActionAsset();
+            return false;
+          }
+        },
+        getMax() {
+            let balanceElement = this.originalBalance[this.currency.id];
+            return balanceElement ? balanceElement + '' : null;
+          },
 
-                  console.debug(`Invest blockchain. Buy action Sum: ${sum}. Account: ${this.account}. SlidersPercent: ${this.sliderPercent}`);
-                  let buyResult = await contracts[this.etsData.exchangeContract].methods.buy(sum, referral).send(buyParams).on('transactionHash', function (hash) {
-                        let tx = {
-                            hash: hash,
-                            text: 'Mint ETS ' + etsActionData.nameUp,
-                            product: 'ets_' + etsActionData.name,
-                            productName: 'ETS ' + etsActionData.nameToken,
-                            action: 'mint',
-                            amount: sumInUsd,
-                        };
+          async buyAction() {
+            try {
 
-                        self.putTransaction(tx);
-                        self.showSuccessModal({
-                            successTxHash: hash,
-                            successAction: 'mintEts',
-                            etsData: etsActionData
-                        });
-                        self.loadTransaction();
-                    });
+              let sumInUsd = this.sum;
+              let sum;
 
-                    if (this.isOvercapAvailable) {
-                        let noOvercapSum = parseFloat(this.etsData.maxSupply) - parseFloat(this.totalSupply[this.etsData.name]);
-                        let useOvercapSum;
-
-                        if (noOvercapSum <= 0) {
-                            useOvercapSum = this.sum;
-                        } else {
-                            useOvercapSum = Math.max(this.sum - noOvercapSum, 0);
-                        }
-
-                        await this.useOvercap({
-                            overcapLeft: this.overcapRemaining(),
-                            overcapVolume: useOvercapSum
-                        });
-                    }
-                } catch (e) {
-                  console.error(`Market Invest blockchain buy error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+              if (this.sliderPercent === 100) {
+                let originalMax = this.getMax();
+                sum = originalMax;
+                if (!originalMax) {
+                  console.error("Original max value not exist, when buy action in market invest.")
                   return;
                 }
+              } else {
+                switch (this.etsData.actionTokenDecimals) {
+                  case 6:
+                    sum = this.web3.utils.toWei(this.sum, 'mwei');
+                    break;
+                  case 8:
+                    sum = this.web3.utils.toWei(this.sum, 'mwei') * 100;
+                    break;
+                  case 18:
+                    sum = this.web3.utils.toWei(this.sum, 'ether');
+                    break;
+                  default:
+                    console.error("Decimals type not found for detect wei type in invest.", this.etsData.actionTokenDecimals);
+                    return;
+                }
+              }
 
-                self.refreshMarket();
-                self.setSum(null);
+              if (!(await this.checkApprove())) {
+                console.debug(`Invest blockchain. Buy action Approve not pass. Sum: ${sum} usdSum: ${this.sum}. Account: ${this.account}.`);
+                return;
+              }
+
+              let contracts = this.contracts;
+              let from = this.account;
+              let self = this;
+
+              try {
+                  await this.refreshGasPrice();
+
+                  let buyParams;
+
+                  if (this.gas == null) {
+                      buyParams = {from: from, gasPrice: this.gasPriceGwei};
+                  } else {
+                      buyParams = {from: from, gasPrice: this.gasPriceGwei, gas: this.gas};
+                  }
+
+                  let referral = await this.getReferralCode();
+                  let etsActionData = this.etsData;
+
+                console.debug(`Invest blockchain. Buy action Sum: ${sum} usdSum: ${this.sum}. Account: ${this.account}. SlidersPercent: ${this.sliderPercent}`);
+                let buyResult = await contracts[this.etsData.exchangeContract].methods.buy(sum, referral).send(buyParams).on('transactionHash', function (hash) {
+                      let tx = {
+                          hash: hash,
+                          text: 'Mint ETS ' + etsActionData.nameUp,
+                          product: 'ets_' + etsActionData.name,
+                          productName: 'ETS ' + etsActionData.nameToken,
+                          action: 'mint',
+                          amount: sumInUsd,
+                      };
+
+                      self.putTransaction(tx);
+                      self.showSuccessModal({
+                          successTxHash: hash,
+                          successAction: 'mintEts',
+                          etsData: etsActionData
+                      });
+                      self.loadTransaction();
+                  });
+
+                  if (this.isOvercapAvailable) {
+                      let noOvercapSum = parseFloat(this.etsData.maxSupply) - parseFloat(this.totalSupply[this.etsData.name]);
+                      let useOvercapSum;
+
+                      if (noOvercapSum <= 0) {
+                          useOvercapSum = this.sum;
+                      } else {
+                          useOvercapSum = Math.max(this.sum - noOvercapSum, 0);
+                      }
+
+                      await this.useOvercap({
+                          overcapLeft: this.overcapRemaining(),
+                          overcapVolume: useOvercapSum
+                      });
+                  }
+              } catch (e) {
+                console.error(`Market Invest blockchain buy error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+                return;
+              }
+
+              self.refreshMarket();
+              self.setSum(null);
             } catch (e) {
               console.error(`Market Invest buy error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
             }
@@ -585,21 +778,31 @@ export default {
 
         async confirmSwapAction() {
             try {
-                let sum;
+              let sum;
 
-                switch (this.etsData.actionTokenDecimals) {
-                    case 6:
-                        sum = this.web3.utils.toWei(this.sum, 'mwei');
-                        break;
-                    case 8:
-                        sum = this.web3.utils.toWei(this.sum, 'mwei') * 100;
-                        break;
-                    case 18:
-                        sum = this.web3.utils.toWei(this.sum, 'ether');
-                        break;
-                    default:
-                        break;
+              if (this.sliderPercent === 100) {
+                let originalMax = this.getMax();
+                sum = originalMax;
+                if (!originalMax) {
+                  console.error("Original max value not exist, when confirm swap action in market invest.")
+                  return;
                 }
+              } else {
+                switch (this.etsData.actionTokenDecimals) {
+                  case 6:
+                    sum = this.web3.utils.toWei(this.sum, 'mwei');
+                    break;
+                  case 8:
+                    sum = this.web3.utils.toWei(this.sum, 'mwei') * 100;
+                    break;
+                  case 18:
+                    sum = this.web3.utils.toWei(this.sum, 'ether');
+                    break;
+                  default:
+                    console.error("Decimals type not found for detect wei type in invest.", this.etsData.actionTokenDecimals);
+                    return;
+                }
+              }
 
                 let estimatedGasValue = await this.estimateGas(sum);
                 if (estimatedGasValue === -1 || estimatedGasValue === undefined) {
@@ -628,7 +831,8 @@ export default {
             }
         },
 
-        async approveAction() {
+
+      async approveAction() {
             try {
                 this.showWaitingModal('Approving in process');
 
@@ -651,9 +855,11 @@ export default {
                 }
 
                 let allowApprove = await this.checkAllowance(sum);
+                allowApprove = !allowApprove ? (await this.approveBlockchainAction(sum)) : true;
                 if (!allowApprove) {
                     this.closeWaitingModal();
                     this.showErrorModal('approve');
+                    this.disapproveActionAsset();
                     return;
                 } else {
                     this.approveActionAsset();
@@ -664,44 +870,44 @@ export default {
               this.showErrorModal('approve');
             }
         },
+        async approveBlockchainAction(sum) {
+            try {
+              await this.refreshGasPrice();
+              let contracts = this.contracts;
+              let from = this.account;
 
-        async checkAllowance(sum) {
+              let approveParams = {gasPrice: this.gasPriceGwei, from: from};
 
-            let contracts = this.contracts;
-            let from = this.account;
+              let tx = await contracts[this.etsData.actionAsset].methods.approve(contracts[this.etsData.exchangeContract].options.address, sum).send(approveParams);
 
-            let allowanceValue = await contracts[this.etsData.actionAsset].methods.allowance(from, contracts[this.etsData.exchangeContract].options.address).call();
+              let minted = true;
+              while (minted) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                let receipt = await this.web3.eth.getTransactionReceipt(tx.transactionHash);
 
-            if (allowanceValue < sum) {
-                try {
-                    await this.refreshGasPrice();
-                    let approveParams = {gasPrice: this.gasPriceGwei, from: from};
-
-                    let tx = await contracts[this.etsData.actionAsset].methods.approve(contracts[this.etsData.exchangeContract].options.address, sum).send(approveParams);
-
-                    let minted = true;
-                    while (minted) {
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        let receipt = await this.web3.eth.getTransactionReceipt(tx.transactionHash);
-
-                        if (receipt) {
-                            if (receipt.status)
-                                return true;
-                            else {
-                                return false;
-                            }
-                        }
-                    }
-
+                if (receipt) {
+                  if (receipt.status)
                     return true;
-                } catch (e) {
-                  console.error(`Market Invest allow action error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
-                  return false;
+                  else {
+                    return false;
+                  }
                 }
-            }
+              }
 
-            return true;
-        },
+              return true;
+            } catch (e) {
+              console.error(`Market Invest allow action error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+              return false;
+            }
+          },
+          async checkAllowance(sum) {
+              let contracts = this.contracts;
+              let from = this.account;
+
+              let allowanceValue = await contracts[this.etsData.actionAsset].methods.allowance(from, contracts[this.etsData.exchangeContract].options.address).call();
+              console.log('allowanceValue: ', allowanceValue, sum, allowanceValue * 1 >= sum * 1)
+              return allowanceValue * 1 >= sum * 1;
+          },
 
         async estimateGas(sum) {
 
@@ -1153,5 +1359,15 @@ export default {
 .balance-network-icon {
     width: 16px !important;
     height: 16px !important;
+}
+
+.galxe-info {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+
+  color: #CF3F92;
 }
 </style>

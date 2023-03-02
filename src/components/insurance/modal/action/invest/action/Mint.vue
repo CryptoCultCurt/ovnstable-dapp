@@ -19,7 +19,8 @@
                                   class="field-sum"
                                   hide-details
                                   background-color="transparent"
-                                  v-model="sum">
+                                  v-model="sum"
+                                  @input="checkApproveCounter">
                     </v-text-field>
                 </v-row>
             </v-col>
@@ -208,6 +209,7 @@ import SuccessModal from "@/components/common/modal/action/SuccessModal";
 import BN from "bn.js";
 import polygonIcon from "@/assets/network/polygon.svg";
 import optimismIcon from "@/assets/network/op.svg";
+import arbitrumIcon from "@/assets/network/ar.svg";
 import bscIcon from "@/assets/network/bsc.svg";
 import {axios} from "@/plugins/http-axios";
 import GasSettingsMenu from "@/components/common/modal/gas/components/GasSettingsMenu";
@@ -244,11 +246,14 @@ export default {
 
         sliderPercent: 0,
         stepLabels: ['', 'Approve', 'Confirmation'],
-        step: 0
+        step: 0,
+
+        sumApproveCheckerId: null,
+        sumApproveCheckerSec: 0
     }),
 
     computed: {
-        ...mapGetters('accountData', ['balance', 'account', 'insuranceBalance']),
+        ...mapGetters('accountData', ['balance', 'originalBalance', 'account', 'insuranceBalance']),
         ...mapGetters('transaction', ['transactions']),
 
         ...mapGetters('insuranceInvestModal', ['actionAssetApproved']),
@@ -266,6 +271,8 @@ export default {
                     return optimismIcon;
                 case 56:
                     return bscIcon;
+                case 42161:
+                    return arbitrumIcon;
             }
         },
 
@@ -295,7 +302,7 @@ export default {
             this.step = 0;
 
             if (!this.account) {
-                return 'Connect to a wallet';
+                return 'Connect wallet';
             } else if (this.transactionPending) {
                 return 'Transaction is pending';
             } else if (this.isBuy) {
@@ -372,7 +379,7 @@ export default {
     methods: {
 
         ...mapActions("insuranceData", ['refreshInsurance']),
-        ...mapActions("insuranceInvestModal", ['showRedeemView', 'approveActionAsset']),
+        ...mapActions("insuranceInvestModal", ['showRedeemView', 'approveActionAsset', 'disapproveActionAsset']),
 
         ...mapActions("gasPrice", ['refreshGasPrice']),
         ...mapActions("walletAction", ['connectWallet']),
@@ -383,8 +390,10 @@ export default {
 
         ...mapActions("transaction", ['putTransaction', 'loadTransaction']),
 
-        changeSliderPercent() {
+        async changeSliderPercent() {
             this.sum = (this.balance.asset * (this.sliderPercent / 100.0)).toFixed(this.sliderPercent === 0 ? 0 : 6) + '';
+            this.sum = isNaN(this.sum) ? 0 : this.sum
+            await this.checkApprove();
         },
 
         isNumber: function(evt) {
@@ -405,26 +414,87 @@ export default {
         setSum(value) {
             this.sum = value;
         },
+        async checkApproveCounter() {
+          if (!this.sumApproveCheckerId) {
+            // first call
+            this.sumApproveCheckerId = -1;
+            await this.checkApprove();
+            return;
+          }
 
-        max() {
-            let balanceElement = this.insuranceBalance.polygon;
-            this.sum = balanceElement + "";
+          this.sumApproveCheckerSec = 0;
+          let intervalId = setInterval(async () => {
+            this.sumApproveCheckerSec++;
+
+            if (this.sumApproveCheckerSec >= 2) {
+              if (this.sumApproveCheckerId === intervalId) {
+                this.sumApproveCheckerSec = 0;
+                try {
+                  await this.checkApprove();
+                } catch (e) {
+                  // ignore
+                } finally {
+                  clearInterval(intervalId)
+                }
+              } else {
+                clearInterval(intervalId)
+              }
+
+            }
+          }, 1000);
+
+          this.sumApproveCheckerId = intervalId;
+        },
+        async checkApprove() {
+          console.log("Check Approve action", this.sum);
+
+          try {
+            if (!this.sum || !isNaN(this.sum)  || !this.account) {
+              return;
+            }
+
+            let sum = this.web3.utils.toWei(this.sum, this.assetDecimals === 18 ? 'ether' : 'mwei');
+            let allowApprove = await this.checkAllowance(sum);
+            console.log("allowApprove : ", allowApprove, sum)
+            if (!allowApprove) {
+              this.disapproveActionAsset();
+              return false;
+            } else {
+              this.approveActionAsset();
+              return true;
+            }
+          } catch (e) {
+            console.error(`Market Withdraw approve action error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+            this.showErrorModal('approve');
+            this.disapproveActionAsset();
+            return false;
+          }
+        },
+        getMax() {
+          let balanceElement = this.originalBalance[this.currency.id];
+          return balanceElement ? balanceElement + '' : null;
         },
 
         async buyAction() {
             try {
 
-              if (this.sliderPercent === 100) {
-                this.max();
-              }
-
                 let sumInUsd = this.sum;
                 let sum;
 
-                if (this.assetDecimals === 18) {
-                    sum = this.web3.utils.toWei(this.sum, 'ether');
+                if (this.sliderPercent === 100) {
+                  let originalMax = this.getMax();
+                  sum = originalMax;
+                  if (!originalMax) {
+                    console.error("Original max value not exist, when confirm buy action in insurance mint.")
+                    return;
+                  }
                 } else {
-                    sum = this.web3.utils.toWei(this.sum, 'mwei');
+                  sum = this.web3.utils.toWei(this.sum, this.assetDecimals === 18 ? 'ether' : 'mwei');
+                }
+
+                if (!(await this.checkApprove())) {
+                  console.debug(`Invest insurance. Buy action Approve not pass. Sum: ${sum} usdSum: ${this.sum}. Account: ${this.account}.`);
+                  return;
                 }
 
                 let contracts = this.contracts;
@@ -446,7 +516,7 @@ export default {
                         amount: sum,
                     }
 
-                    console.debug(`Insurance blockchain. Mit action Sum: ${sum}. Account: ${this.account}. SlidersPercent: ${this.sliderPercent}`);
+                    console.debug(`Insurance blockchain. Mit action Sum: ${sum} usdSum: ${this.sum}. Account: ${this.account}. SlidersPercent: ${this.sliderPercent}`);
                     let buyResult = await contracts.insurance.polygon_exchanger.methods.mint(mintParams).send(buyParams).on('transactionHash', function (hash) {
                         let tx = {
                             hash: hash,
@@ -477,10 +547,15 @@ export default {
             try {
                 let sum;
 
-                if (this.assetDecimals === 18) {
-                    sum = this.web3.utils.toWei(this.sum, 'ether');
+                if (this.sliderPercent === 100) {
+                  let originalMax = this.getMax();
+                  sum = originalMax;
+                  if (!originalMax) {
+                    console.error("Original max value not exist, when confirm swap action in insurance mint.")
+                    return;
+                  }
                 } else {
-                    sum = this.web3.utils.toWei(this.sum, 'mwei');
+                  sum = this.web3.utils.toWei(this.sum, this.assetDecimals === 18 ? 'ether' : 'mwei');
                 }
 
                 let estimatedGasValue = await this.estimateGas(sum);
@@ -520,58 +595,58 @@ export default {
                 }
 
                 let allowApprove = await this.checkAllowance(sum);
+                allowApprove = !allowApprove ? (await this.approveBlockchainAction(sum)) : true;
                 if (!allowApprove) {
-                    this.closeWaitingModal();
-                    this.showErrorModal('approve');
-                } else {
-                    this.approveActionAsset();
-                    this.closeWaitingModal();
-                }
+                      this.closeWaitingModal();
+                      this.showErrorModal('approve');
+                      this.disapproveActionAsset();
+                  } else {
+                      this.approveActionAsset();
+                      this.closeWaitingModal();
+                  }
             } catch (e) {
               console.error(`Mint Insurance approve action error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
               this.showErrorModal('approve');
-
             }
         },
-
-        async checkAllowance(sum) {
-
+        async approveBlockchainAction(sum) {
+          try {
+            await this.refreshGasPrice();
             let contracts = this.contracts;
             let from = this.account;
 
-            let allowanceValue = await contracts.asset.methods.allowance(from, contracts.insurance.polygon_exchanger.options.address).call();
+            let approveParams = {gasPrice: this.gasPriceGwei, from: from};
 
-            if (allowanceValue < sum) {
-                try {
-                    await this.refreshGasPrice();
-                    let approveParams = {gasPrice: this.gasPriceGwei, from: from};
+            let tx = await contracts.asset.methods.approve(contracts.insurance.polygon_exchanger.options.address, sum).send(approveParams);
 
-                    let tx = await contracts.asset.methods.approve(contracts.insurance.polygon_exchanger.options.address, sum).send(approveParams);
+            let minted = true;
+            while (minted) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              let receipt = await this.web3.eth.getTransactionReceipt(tx.transactionHash);
 
-                    let minted = true;
-                    while (minted) {
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        let receipt = await this.web3.eth.getTransactionReceipt(tx.transactionHash);
-
-                        if (receipt) {
-                            if (receipt.status)
-                                return true;
-                            else {
-                                return false;
-                            }
-                        }
-                    }
-
-                    return true;
-                } catch (e) {
-                    console.log(e)
-                    return false;
+              if (receipt) {
+                if (receipt.status)
+                  return true;
+                else {
+                  return false;
                 }
+              }
             }
 
             return true;
+          } catch (e) {
+            console.log(e)
+            return false;
+          }
         },
+        async checkAllowance(sum) {
+          let contracts = this.contracts;
+          let from = this.account;
 
+          let allowanceValue = await contracts.asset.methods.allowance(from, contracts.insurance.polygon_exchanger.options.address).call();
+          console.log('allowanceValue: ', allowanceValue, sum, allowanceValue * 1 >= sum * 1)
+          return allowanceValue * 1 >= sum * 1;
+        },
         async estimateGas(sum) {
 
             let contracts = this.contracts;

@@ -17,7 +17,8 @@
                                   class="field-sum"
                                   hide-details
                                   background-color="transparent"
-                                  v-model="sum">
+                                  v-model="sum"
+                                  @input="checkApproveCounter">
                     </v-text-field>
                 </v-row>
             </v-col>
@@ -224,6 +225,7 @@ import SuccessModal from "@/components/common/modal/action/SuccessModal";
 import BN from "bn.js";
 import polygonIcon from "@/assets/network/polygon.svg";
 import optimismIcon from "@/assets/network/op.svg";
+import arbitrumIcon from "@/assets/network/ar.svg";
 import bscIcon from "@/assets/network/bsc.svg";
 import {axios} from "@/plugins/http-axios";
 import Tooltip from "@/components/common/element/Tooltip";
@@ -262,11 +264,14 @@ export default {
 
         sliderPercent: 0,
         stepLabels: ['', 'Approve', 'Confirmation'],
-        step: 0
+        step: 0,
+
+        sumApproveCheckerId: null,
+        sumApproveCheckerSec: 0
     }),
 
     computed: {
-        ...mapGetters('accountData', ['balance', 'account', 'insuranceBalance']),
+        ...mapGetters('accountData', ['balance', 'account', 'insuranceBalance', 'originalBalance']),
         ...mapGetters('transaction', ['transactions']),
 
         ...mapGetters('insuranceInvestModal', ['insuranceTokenApproved']),
@@ -284,6 +289,8 @@ export default {
                     return optimismIcon;
                 case 56:
                     return bscIcon;
+                case 42161:
+                    return arbitrumIcon;
             }
         },
 
@@ -313,7 +320,7 @@ export default {
             this.step = 0;
 
             if (!this.account) {
-                return 'Connect to a wallet';
+                return 'Connect wallet';
             } else if (this.transactionPending) {
                 return 'Transaction is pending';
             } else if (this.isBuy) {
@@ -390,7 +397,7 @@ export default {
     methods: {
 
         ...mapActions("insuranceData", ['refreshInsurance']),
-        ...mapActions("insuranceInvestModal", ['showMintView', 'approveInsuranceToken', 'showRedemptionRequestModal']),
+        ...mapActions("insuranceInvestModal", ['showMintView', 'approveInsuranceToken', 'disapproveInsuranceToken', 'showRedemptionRequestModal']),
 
         ...mapActions("gasPrice", ['refreshGasPrice']),
         ...mapActions("walletAction", ['connectWallet']),
@@ -401,8 +408,10 @@ export default {
 
         ...mapActions("transaction", ['putTransaction', 'loadTransaction']),
 
-        changeSliderPercent() {
+        async changeSliderPercent() {
             this.sum = (this.insuranceBalance.polygon * (this.sliderPercent / 100.0)).toFixed(this.sliderPercent === 0 ? 0 : 6) + '';
+            this.sum = isNaN(this.sum) ? 0 : this.sum
+            await this.checkApprove();
         },
 
         isNumber: function(evt) {
@@ -424,9 +433,66 @@ export default {
             this.sum = value;
         },
 
-        max() {
-            let balanceElement = this.insuranceBalance.polygon;
-            this.sum = balanceElement + "";
+        async checkApproveCounter() {
+          if (!this.sumApproveCheckerId) {
+            // first call
+            this.sumApproveCheckerId = -1;
+            await this.checkApprove();
+            return;
+          }
+
+          this.sumApproveCheckerSec = 0;
+          let intervalId = setInterval(async () => {
+            this.sumApproveCheckerSec++;
+
+            if (this.sumApproveCheckerSec >= 2) {
+              if (this.sumApproveCheckerId === intervalId) {
+                this.sumApproveCheckerSec = 0;
+                try {
+                  await this.checkApprove();
+                } catch (e) {
+                  // ignore
+                } finally {
+                  clearInterval(intervalId)
+                }
+              } else {
+                clearInterval(intervalId)
+              }
+
+            }
+          }, 1000);
+
+          this.sumApproveCheckerId = intervalId;
+        },
+        async checkApprove() {
+          console.log("Check Approve action", this.sum);
+
+          try {
+            if (!this.sum || isNaN(this.sum) || !this.account) {
+              return;
+            }
+
+            let sum = this.web3.utils.toWei(this.sum, 'mwei');
+            let allowApprove = await this.checkAllowance(sum);
+            console.log("allowApprove : ", allowApprove, sum)
+            if (!allowApprove) {
+              this.disapproveInsuranceToken();
+              return false;
+            } else {
+              this.approveInsuranceToken();
+              return true;
+            }
+          } catch (e) {
+            console.error(`Market Withdraw approve action error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+            this.showErrorModal('approve');
+            this.disapproveInsuranceToken();
+            return false;
+          }
+        },
+
+        getMax() {
+          let balanceElement = this.originalBalance[this.currency.id];
+          return balanceElement ? balanceElement + '' : null;
         },
 
         redemptionRequestAction() {
@@ -435,13 +501,26 @@ export default {
 
         async redeemAction() {
             try {
-
-                if (this.sliderPercent === 100) {
-                  this.max();
-                }
+                console.debug(`Swap Withdraw blockchain. Start buy action. Account: ${this.account}. estimatedGasValue: ${this.sliderPercent}`);
 
                 let sumInUsd = this.sum;
-                let sum = this.web3.utils.toWei(this.sum, 'mwei');
+                let sum;
+
+                if (this.sliderPercent === 100) {
+                  let originalMax = this.getMax();
+                  sum = originalMax;
+                  if (!originalMax) {
+                    console.error("Original max value not exist, when confirm redeem action in insurance redeem.")
+                    return;
+                  }
+                } else {
+                  sum = this.web3.utils.toWei(this.sum, 'mwei');
+                }
+
+              if (!(await this.checkApprove())) {
+                console.debug(`Redeem insurance. Buy action Approve not pass. Sum: ${sum} usdSum: ${this.sum}. Account: ${this.account}.`);
+                return;
+              }
 
                 let contracts = this.contracts;
                 let from = this.account;
@@ -458,7 +537,7 @@ export default {
                         buyParams = {from: from, gasPrice: this.gasPriceGwei, gas: this.gas};
                     }
 
-                    console.debug(`Insurance blockchain. Withdraw action Sum: ${sum}. Account: ${this.account}. SlidersPercent: ${this.sliderPercent}`);
+                    console.debug(`Insurance blockchain. Withdraw action Sum: ${sum} usdSum: ${this.sum}. Account: ${this.account}. SlidersPercent: ${this.sliderPercent}`);
 
                     let buyResult = await contracts.insurance.polygon_exchanger.methods.redeem({ amount: sum }).send(buyParams).on('transactionHash', function (hash) {
                         let tx = {
@@ -488,7 +567,18 @@ export default {
 
         async confirmSwapAction() {
             try {
-                let sum = this.web3.utils.toWei(this.sum, 'mwei');
+                let sum;
+
+                if (this.sliderPercent === 100) {
+                  let originalMax = this.getMax();
+                  sum = originalMax;
+                  if (!originalMax) {
+                    console.error("Original max value not exist, when confirm swap action in insurance redeem.")
+                    return;
+                  }
+                } else {
+                  sum = this.web3.utils.toWei(this.sum, 'mwei');
+                }
 
                 let estimatedGasValue = await this.estimateGas(sum);
                 if (estimatedGasValue === -1 || estimatedGasValue === undefined) {
@@ -523,55 +613,55 @@ export default {
                 let sum = this.web3.utils.toWei(approveSum, 'mwei');
 
                 let allowApprove = await this.checkAllowance(sum);
+                allowApprove = !allowApprove ? (await this.approveBlockchainAction(sum)) : true;
                 if (!allowApprove) {
-                    this.closeWaitingModal();
-                    this.showErrorModal('approve');
-                } else {
-                    this.approveInsuranceToken();
-                    this.closeWaitingModal();
-                }
+                      this.closeWaitingModal();
+                      this.showErrorModal('approve');
+                      this.disapproveInsuranceToken();
+                  } else {
+                      this.approveInsuranceToken();
+                      this.closeWaitingModal();
+                  }
             } catch (e) {
               console.error(`Withdraw Insurance approve error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
               this.showErrorModal('approve');
             }
         },
-
-        async checkAllowance(sum) {
-
+        async approveBlockchainAction(sum) {
+          try {
+            await this.refreshGasPrice();
             let contracts = this.contracts;
             let from = this.account;
 
-            let allowanceValue = await contracts.insurance.polygon_token.methods.allowance(from, contracts.insurance.polygon_exchanger.options.address).call()
+            let tx = await contracts.insurance.polygon_token.methods.approve(contracts.insurance.polygon_exchanger.options.address, sum).send(approveParams);
 
-            if (allowanceValue < sum) {
-                try {
-                    await this.refreshGasPrice();
-                    let approveParams = {gasPrice: this.gasPriceGwei, from: from};
+            let minted = true;
+            while (minted) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              let receipt = await this.web3.eth.getTransactionReceipt(tx.transactionHash);
 
-                    let tx = await contracts.insurance.polygon_token.methods.approve(contracts.insurance.polygon_exchanger.options.address, sum).send(approveParams);
-
-                    let minted = true;
-                    while (minted) {
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        let receipt = await this.web3.eth.getTransactionReceipt(tx.transactionHash);
-
-                        if (receipt) {
-                            if (receipt.status)
-                                return true;
-                            else {
-                                return false;
-                            }
-                        }
-                    }
-
-                    return true;
-                } catch (e) {
-                  console.error(`Withdraw Insurance allowance error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+              if (receipt) {
+                if (receipt.status)
+                  return true;
+                else {
                   return false;
                 }
+              }
             }
 
             return true;
+          } catch (e) {
+            console.error(`Withdraw Insurance allowance error: ${e}. Sum: ${this.sum}. Account: ${this.account}. `);
+            return false;
+          }
+        },
+        async checkAllowance(sum) {
+          let contracts = this.contracts;
+          let from = this.account;
+
+          let allowanceValue = await contracts.insurance.polygon_token.methods.allowance(from, contracts.insurance.polygon_exchanger.options.address).call()
+          console.log('allowanceValue: ', allowanceValue, sum, allowanceValue * 1 >= sum * 1)
+          return allowanceValue * 1 >= sum * 1;
         },
 
         async estimateGas(sum) {

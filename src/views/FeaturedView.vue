@@ -17,7 +17,7 @@
           </v-row>
             <v-row v-else class="d-flex" justify="start">
                 <v-col :cols="$wu.isMobile() ? 12 : ($wu.isTablet() ? 6 : 4)"
-                       v-for="card in sortedCardList.filter(value => (!value.isPrototype && !value.isArchive)).slice(0, 3)"
+                       v-for="card in sortedCardList.filter(value => (!value.isOpenPrototype && !value.isArchive)).slice(0, 3)"
                        :key="card.id">
                     <v-row class="fill-height">
                         <component
@@ -85,7 +85,7 @@ export default {
     }),
 
   computed: {
-    ...mapGetters('network', ['appApiUrl', 'networkId', 'polygonConfig', 'bscConfig', 'opConfig']),
+    ...mapGetters('network', ['appApiUrl', 'networkId', 'polygonConfig', 'bscConfig', 'opConfig', 'arConfig']),
     ...mapGetters('accountData', ['account']),
     ...mapGetters('web3', ['contracts', 'web3']),
     // ...mapGetters('supplyData', ['totalSupply', 'totalInsuranceSupply']),
@@ -264,7 +264,6 @@ export default {
       this.totalSupply = resultSupply;
       this.isTotalSupplyLoading = false;
       console.log('Supply: refreshSupply end', this.totalSupply);
-
     },
 
     async refreshInsuranceSupply() {
@@ -338,6 +337,9 @@ export default {
                 break;
               case 56:
                 appApiUrl = this.bscConfig.appApiUrl;
+                break;
+              case 42161:
+                appApiUrl = this.arConfig.appApiUrl;
                 break;
               default:
                 appApiUrl = this.polygonConfig.appApiUrl;
@@ -480,6 +482,9 @@ export default {
               case 56:
                 appApiUrl = this.bscConfig.appApiUrl;
                 break;
+              case 42161:
+                appApiUrl = this.arConfig.appApiUrl;
+                break;
               default:
                 appApiUrl = this.polygonConfig.appApiUrl;
                 break;
@@ -513,7 +518,7 @@ export default {
       this.isUsdPlusPayoutsDataLoading = true;
 
       await Promise.all(
-          ['polygon', 'bsc', 'optimism'].map(async network => {
+          ['polygon', 'bsc', 'optimism', 'arbitrum'].map(async network => {
 
             let appApiUrl;
 
@@ -526,6 +531,9 @@ export default {
                 break;
               case "optimism":
                 appApiUrl = this.opConfig.appApiUrl;
+                break;
+              case "arbitrum":
+                appApiUrl = this.arConfig.appApiUrl;
                 break;
             }
 
