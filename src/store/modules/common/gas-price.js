@@ -62,7 +62,7 @@ const actions = {
         let url;
         if (networkId === 137)
             url = "https://gpoly.blockscan.com/gasapi.ashx?apikey=key&method=gasoracle";
-        else if(networkId === 56)
+        else if(networkId === 56 || networkId === 31337)
             url = "https://gbsc.blockscan.com/gasapi.ashx?apikey=key&method=gasoracle";
         else if (networkId === 10 || networkId === 42161){
             console.log('GAS STATION: fixed for op');

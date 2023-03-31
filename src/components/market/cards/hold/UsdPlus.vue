@@ -7,7 +7,7 @@
                 </span>
                 <v-row class="d-flex flex-column align-start mr-3 ml-8">
                     <v-row class="d-flex" align="center">
-                        <label class="card-title">USD+ ON {{ networkName }}</label>
+                        <label class="card-title">Sion ON {{ networkName }}</label>
                     </v-row>
                     <v-row class="d-flex mt-5">
                         <label class="percentage">
@@ -45,7 +45,7 @@
                 <v-divider class="card-divider"></v-divider>
 
                 <v-row class="ma-0 mt-8">
-                    <label class="card-info">Park your stables in USD+, and watch your balance grow in your wallet
+                    <label class="card-info">Park your stables in Sion, and watch your balance grow in your wallet
                         overnight. No
                         staking required</label>
                 </v-row>
@@ -74,7 +74,7 @@
                     <label class="your-deposit">Current balance</label>
                     <label
                         class="your-deposit" :class="dataHidden ? 'hidden-label' : ''">
-                      {{dataHidden ? '' : this.balance.usdPlus ? ($utils.formatMoneyComma(this.balance.usdPlus, 2) + " USD+") : "—" }}
+                      {{dataHidden ? '' : this.balance.usdPlus ? ($utils.formatMoneyComma(this.balance.usdPlus, 2) + " Sion") : "—" }}
                     </label>
                 </v-row>
 
@@ -82,13 +82,13 @@
                     <template>
                         <v-col class="mr-1">
                             <v-row>
-                                <v-btn class="button btn-filled" @click.stop="mintAction">Mint USD+</v-btn>
+                                <v-btn class="button btn-filled" @click.stop="mintAction">Mint Sion</v-btn>
                             </v-row>
                         </v-col>
                         <v-col class="ml-1">
                             <v-row>
                                 <v-btn class="button btn-outlined" @click.stop="redeemAction" outlined>
-                                    REDEEM USD+
+                                    REDEEM Sion
                                 </v-btn>
                             </v-row>
                         </v-col>
@@ -97,7 +97,7 @@
             </v-container>
 
             <v-row class="footer-row d-flex align-center justify-center" @click.stop="openPerformance">
-                <label class="footer-link">View USD+ performance</label>
+                <label class="footer-link">View Sion performance</label>
                 <img class="open-icon ml-1" src="@/assets/icon/open-in-new.svg">
             </v-row>
         </v-col>

@@ -11,7 +11,7 @@
                     {{ dataHidden ? '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' : ($utils.formatMoney(account ? balance.usdPlus : 0, 2)) }}
                 </label>
                 <label class="balance-label">
-                    &nbsp;USD+
+                    &nbsp;Sion
                 </label>
             </v-col>
             <v-col :cols="$wu.isMobile() ? 0 : 4" class="wallet-col" :class="$wu.isMobile() ? 'mr-4' : ''">

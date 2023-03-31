@@ -9,19 +9,19 @@
                 <div class="coin-img">
                     <v-img :src="require('@/assets/currencies/usdPlus.svg')"/>
                 </div>
-                <label class="ml-2 coin-btn-label">USD+</label>
+                <label class="ml-2 coin-btn-label">Sion</label>
             </v-btn>
             <v-btn class="coin-btn ma-1" @click="addwUsdPlusToken" v-if="showWrap">
                 <div class="coin-img">
                     <v-img :src="require('@/assets/currencies/wUsdPlus.svg')"/>
                 </div>
-                <label class="ml-2 coin-btn-label">wUSD+</label>
+                <label class="ml-2 coin-btn-label">wScion</label>
             </v-btn>
             <v-btn class="coin-btn ma-1" @click="addInsuranceToken" v-if="networkId === 137">
                 <div class="coin-img">
                     <v-img :src="require('@/assets/currencies/insurance/INSURANCE.svg')"/>
                 </div>
-                <label class="ml-2 coin-btn-label">USD+ INS</label>
+                <label class="ml-2 coin-btn-label">Sion INS</label>
             </v-btn>
 
             <v-btn

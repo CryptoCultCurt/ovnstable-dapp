@@ -72,13 +72,13 @@ export default {
         actionSuccessToken: function () {
             switch (this.successAction) {
                 case 'mintUsdPlus':
-                    return 'USD+'
+                    return 'Scion'
                 case 'redeemUsdPlus':
-                    return 'USD+'
+                    return 'Scion'
                 case 'wrapUsdPlus':
-                    return 'wUSD+'
+                    return 'wTEST+'
                 case 'unwrapUsdPlus':
-                    return 'wUSD+'
+                    return 'wTEST+'
                 case 'mintEts':
                     return 'ETS ' + (this.etsData ? this.etsData.nameToken : '');
                 case 'redeemEts':

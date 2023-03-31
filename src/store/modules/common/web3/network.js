@@ -5,7 +5,7 @@ const POLYGON_PARAMS = {
     rpcUrl: 'https://polygon-rpc.com/',
     explorerUrl: 'https://polygonscan.com/',
     assetName: 'USDC',
-    assetDecimals: 6,
+    assetDecimals: 18,
     nativeAssetName: 'MATIC',
     bridgeLink: 'https://router.via.exchange/polygon/USD+/bsc/USD+',
 }
@@ -14,6 +14,18 @@ const BSC_PARAMS = {
     appApiUrl: 'https://bsc.overnight.fi/api',
     networkName: 'bsc',
     networkId: 56,
+    rpcUrl: 'https://bsc-dataseed.binance.org',
+    explorerUrl: 'https://bscscan.com/',
+    assetName: 'USDT',
+    assetDecimals: 18,
+    nativeAssetName: 'BNB',
+    bridgeLink: 'https://router.via.exchange/bsc/USD+/optimism/USD+',
+}
+
+const BSC_DEV_PARAMS = {
+    appApiUrl: 'https://bsc.overnight.fi/api',
+    networkName: 'bsc',
+    networkId: 31337,
     rpcUrl: 'https://bsc-dataseed.binance.org',
     explorerUrl: 'https://bscscan.com/',
     assetName: 'BUSD',
@@ -77,11 +89,12 @@ function _getParams(networkName) {
         case "polygon":
         case "polygon_dev":
         case "137":
-        case "31337":
             return POLYGON_PARAMS;
         case "bsc":
         case "56":
             return BSC_PARAMS;
+        case "31337":
+            return BSC_DEV_PARAMS;
         case "op":
         case "optimism":
         case "10":

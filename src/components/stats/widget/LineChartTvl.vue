@@ -3,7 +3,7 @@
         <v-row class="chart-header-row">
             <v-col>
                 <v-row justify="start">
-                    <label class="chart-title">{{ totalTvl ? 'USD+&nbsp;' : '' }}</label>
+                    <label class="chart-title">{{ totalTvl ? 'Sion&nbsp;' : '' }}</label>
                     <label class="chart-title" style="margin-left: 0 !important"><abbr title="Total Value Locked">TVL</abbr></label>
                 </v-row>
 

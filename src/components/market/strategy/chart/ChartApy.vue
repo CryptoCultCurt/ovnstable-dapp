@@ -1,13 +1,13 @@
 <template>
     <div class="apy-chart-container">
         <v-row class="chart-header-row">
-            <v-col cols="6" :cols="$wu.isMobile() ? 12 : 6">
-              <v-row justify="start" align="left">
+            <v-col cols="6">
+              <v-row justify="start">
                 <label class="chart-title ml-5">
                   ETS {{ etsData.nameUp }}
                 </label>
               </v-row>
-              <v-row justify="start" align="left">
+              <v-row justify="start">
                 <div>
                   <label class="mobile-info-title ml-5">
                     {{ (compoundData && compoundData.all) ? ($utils.formatMoneyComma(compoundData.all, 2)) + '%' : '' }}
@@ -354,7 +354,7 @@ export default {
             if (this.usdPlusDataEnabled) {
                 seriesList.push(
                     {
-                        name: "USD+ APY",
+                        name: "Sion APY",
                         data: valuesUsdPlus
                     }
                 );

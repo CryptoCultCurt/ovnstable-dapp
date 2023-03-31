@@ -163,9 +163,9 @@ export default {
                     params: {
                         type: 'ERC20',
                         options: {
-                            address: "0x236eeC6359fb44CCe8f97E99387aa7F8cd5cdE1f",
-                            symbol: "USD+",
-                            decimals: 6,
+                            address: "0x39176BCC258828C4ba6917eFB8CD9110833A8199",
+                            symbol: "Sion",
+                            decimals: 18,
                             image: UsdPlusImage.image,
                         },
                     },

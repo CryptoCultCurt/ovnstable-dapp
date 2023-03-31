@@ -108,7 +108,7 @@
 
                     <tr>
                         <td>
-                            <b>Total USD+</b>
+                            <b>Total Scion</b>
                         </td>
                         <td class="text-right">
                             <b>${{ $utils.formatMoney(totalUsdPlusValue, 2) }}</b>
@@ -245,7 +245,7 @@ export default {
                 this.totalUsdPlusValue = data;
               })
               .catch(e => {
-                console.error("Error when load usd+ total in governance", e);
+                console.error("Error when load Sion total in governance", e);
               });
 
         },
@@ -253,8 +253,8 @@ export default {
           setTimeout(async () => {
             let assetDecimals = (await this.contracts.usdPlus.methods.decimals().call()) * 1;
             let blockchainValue = await this.contracts.usdPlus.methods.totalSupply().call();
-            let fromAsset6 = assetDecimals === 6;
-            this.totalUsdPlusValue = (fromAsset6 ? numberUtils._fromE6(blockchainValue.toString()) : numberUtils._fromE18(blockchainValue.toString()))
+            let fromAsset18 = assetDecimals === 18;
+            this.totalUsdPlusValue = (fromAsset18 ? numberUtils._fromE18(blockchainValue.toString()) : numberUtils._fromE18(blockchainValue.toString()))
           }, 3000)
         },
     }

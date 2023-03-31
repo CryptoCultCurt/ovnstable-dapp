@@ -104,7 +104,7 @@
 
         <v-row class="mt-5">
             <v-spacer></v-spacer>
-            <label class="exchange-label">1 {{ assetName }} = 1 USD+</label>
+            <label class="exchange-label">1 {{ assetName }} = 1 Sion</label>
         </v-row>
 
         <v-row class="mt-10">
@@ -233,7 +233,7 @@ export default {
         buyCurrency: null,
         buyCurrencies: [{
             id: 'usdPlus',
-            title: 'USD+',
+            title: 'Sion',
             image: require('@/assets/currencies/usdPlus.svg')
         }],
 
@@ -520,9 +520,9 @@ export default {
                   let buyResult = await contracts.exchange.methods.mint(mintParams).send(buyParams).on('transactionHash', function (hash) {
                       let tx = {
                           hash: hash,
-                          text: 'Mint USD+',
+                          text: 'Mint Sion',
                           product: 'usdPlus',
-                          productName: 'USD+',
+                          productName: 'Sion',
                           action: 'mint',
                           amount: sumInUsd,
                       };
@@ -705,7 +705,7 @@ export default {
                           let msg = error.message.replace(/(?:\r\n|\r|\n)/g, '');
 
                           let errorMsg = {
-                              product: 'USD+',
+                              product: 'Sion',
                               data: {
                                   from: from,
                                   to: contracts.exchange.options.address,

@@ -6,7 +6,7 @@
       :start-angle="0"
       :auto-adjust-text-size="false">
 
-        <p class="total-label">Total USD+</p>
+        <p class="total-label">Total Sion</p>
         <p class="total-sum-label">{{ $utils.formatMoneyComma(totalValue, 0) }}</p>
     </vc-donut>
 </template>

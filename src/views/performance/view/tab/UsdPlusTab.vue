@@ -16,7 +16,7 @@
           <v-col class="info-card-body-bottom">
               <v-row align="center" justify="start" class="ma-0">
                   <label class="section-title-label">
-                    USD+ collateral assets
+                    Sion collateral assets
                   </label>
               </v-row>
 
@@ -53,7 +53,7 @@
       <v-row v-else class="ma-0 info-card-container" :class="$wu.isMobile() ? 'mt-5' : 'mt-3'" justify="start" align="center">
           <v-col class="info-card-body-bottom">
               <v-row align="center" justify="start" class="ma-0">
-                  <label class="section-title-label">USD+ portfolio</label>
+                  <label class="section-title-label">Scion portfolio</label>
               </v-row>
 
               <v-row align="center" justify="center">
@@ -85,7 +85,7 @@
                     <div>
                         <v-img class="currency" :src="require('@/assets/currencies/USD+.png')" />
                     </div>
-                    <label class="currency-text ml-2">USD+ token address</label>
+                    <label class="currency-text ml-2">Scion token address</label>
 
                     <v-spacer></v-spacer>
 

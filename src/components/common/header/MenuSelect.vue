@@ -25,7 +25,7 @@
                         <img class="navbar-page-link" :src="require('@/assets/icon/menu/usdplus.svg')">
                     </v-list-item-icon>
                     <v-list-item-title>
-                        <label class="navbar-page-label ml-6" :class="selectedTab.startsWith('usdplus_') ? 'selected-page' : ''">USD+</label>
+                        <label class="navbar-page-label ml-6" :class="selectedTab.startsWith('usdplus_') ? 'selected-page' : ''">Sion</label>
                     </v-list-item-title>
                     <div class="select-bar-main-container" >
                         <v-row>
@@ -49,7 +49,7 @@
 
                 <v-list-item @click="usdPlusPoolsClick" :class="selectedTab === 'usdplus_pools' ? 'selected-page-item' : ''">
                     <v-list-item-title>
-                        <label class="navbar-list-label mx-5" :class="selectedTab === 'usdplus_pools' ? 'selected-page' : ''">USD+ pools</label>
+                        <label class="navbar-list-label mx-5" :class="selectedTab === 'usdplus_pools' ? 'selected-page' : ''">Sion pools</label>
                     </v-list-item-title>
                 </v-list-item>
 

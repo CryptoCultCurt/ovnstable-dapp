@@ -104,7 +104,7 @@
 
         <v-row class="mt-5">
             <v-spacer></v-spacer>
-            <label class="exchange-label">1 USD+ = 1 {{ assetName }}</label>
+            <label class="exchange-label">1 SCION = 1 {{ assetName }}</label>
         </v-row>
 
         <v-row class="mt-10">
@@ -232,7 +232,7 @@ export default {
         currencies: [
             {
                 id: 'usdPlus',
-                title: 'USD+',
+                title: 'SCION',
                 image: require('@/assets/currencies/usdPlus.svg')
             }
         ],
@@ -313,7 +313,7 @@ export default {
                     return 'Confirm transaction'
                 } else {
                     this.step = 1;
-                    return 'Approve USD+';
+                    return 'Approve Sion';
                 }
             } else if (this.sum > parseFloat(this.balance.usdPlus)) {
                 return 'Redeem'
@@ -520,9 +520,9 @@ export default {
                   let buyResult = await contracts.exchange.methods.redeem(contracts.asset.options.address, sum).send(buyParams).on('transactionHash', function (hash) {
                       let tx = {
                           hash: hash,
-                          text: 'Redeem USD+',
+                          text: 'Redeem Sion',
                           product: 'usdPlus',
-                          productName: 'USD+',
+                          productName: 'Sion',
                           action: 'redeem',
                           amount: sumInUsd,
                       };
@@ -674,7 +674,7 @@ export default {
                             let msg = error.message.replace(/(?:\r\n|\r|\n)/g, '');
 
                             let errorMsg = {
-                                product: 'USD+',
+                                product: 'Sion',
                                 data: {
                                     from: from,
                                     to: contracts.exchange.options.address,

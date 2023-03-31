@@ -49,7 +49,7 @@
                     <v-list-item-title>
                         <label :class="selectedTab.startsWith('usdplus_') ? 'selected-page' : ''"
                                class="navbar-page-label" >
-                            USD+
+                            Sion
                         </label>
                     </v-list-item-title>
                     <div class="select-bar-main-container mr-15" >
@@ -88,7 +88,7 @@
                     <v-list-item-title>
                         <label :class="selectedTab === 'usdplus_pools' ? 'selected-page' : ''"
                                class="navbar-list-label mx-5">
-                            USD+ pools
+                            Sion pools
                         </label>
                     </v-list-item-title>
                 </v-list-item>

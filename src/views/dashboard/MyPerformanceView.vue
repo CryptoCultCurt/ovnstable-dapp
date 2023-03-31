@@ -8,8 +8,8 @@
                     <v-row align="center" justify="start" class="ma-0 toggle-row mt-10">
 
                         <label class="tab-btn tab-btn-disabled mr-4" v-bind:class="activeTabOverall" disabled>Overall</label>
-                        <label class="tab-btn mx-4" @click="setTab(2)" v-bind:class="activeTabUsdPlus">USD+</label>
-                        <label class="tab-btn mx-4" @click="setTab(3)" v-bind:class="activeTabETS" disabled>ETS</label>
+                        <label class="tab-btn mx-4" @click="setTab(2)" v-bind:class="activeTabUsdPlus">Sion</label>
+                        <!-- <label class="tab-btn mx-4" @click="setTab(3)" v-bind:class="activeTabETS" disabled>ETS</label> -->
 
                         <v-spacer></v-spacer>
 
@@ -142,7 +142,7 @@
                                             class="mr-2"
                                         ></v-progress-circular>
                                         <label class="container-body-title"
-                                               :class="$wu.isFull() ? '' : 'mb-1'">USD+</label>
+                                               :class="$wu.isFull() ? '' : 'mb-1'">Sion</label>
                                         <label class="container-body-title container-body-title-slice"
                                                :class="$wu.isFull() ? '' : 'mb-1'" v-if="$wu.isFull()">&nbsp;&nbsp;|&nbsp;</label>
                                         <v-spacer v-if="!$wu.isFull()"></v-spacer>
@@ -156,7 +156,7 @@
                                         <v-col>
                                             <v-row justify="center" align="center">
                                                 <label class="container-info-sub-title">
-                                                    Balance
+                                                    Balance uh
                                                 </label>
                                             </v-row>
                                             <v-row justify="center" align="center">
@@ -214,7 +214,7 @@
 
                     <v-row v-if="!isUsdPlusLoading && !anyActivities" align="center" justify="start" class="ma-0" :class="$wu.isFull() ? 'mt-8' : 'mt-5'">
                         <v-btn class="dashboard-action-btn btn-filled" @click="mintAction" v-if="walletConnected">
-                            Mint USD+ to start
+                            Mint Sion to start
                         </v-btn>
                         <v-btn class="dashboard-action-btn btn-outlined" outlined @click="connectWallet" v-else>
                             Connect wallet
@@ -234,7 +234,7 @@
                            :class="$wu.isFull() ? 'mt-6' : 'mt-3'">
                         <v-col class="info-card-body-bottom">
                             <v-row align="center" justify="start" class="ma-0">
-                                <label class="container-body-title" :class="$wu.isFull() ? '' : 'mb-1'">USD+
+                                <label class="container-body-title" :class="$wu.isFull() ? '' : 'mb-1'">Sion
                                     Transactions</label>
                             </v-row>
 
@@ -268,21 +268,21 @@
                                             <v-img :src="require('@/assets/currencies/wUsdPlus.svg')"/>
                                         </div>
                                         <label class="container-body-title" :class="$wu.isFull() ? '' : 'mb-1'">Wrapped
-                                            USD+</label>
+                                            Sion</label>
                                     </v-row>
                                 </v-col>
 
-                                <v-col :cols="$wu.isFull() ? 8 : 12">
+                                <!-- <v-col :cols="$wu.isFull() ? 8 : 12">
                                     <v-row justify="start" align="start">
                                         <label class="container-body-text text-wide">
                                             wUSD+ is an index-adjusted wrapper for USD+. Some people may find this
-                                            useful for cross-blockchain purposes. Unlike your USD+ balance, your wUSD+
+                                            useful for cross-blockchain purposes. Unlike your Scion Balance, your wUSD+
                                             balance will not increase over time. When wUSD+ is unwrapped, you receive
                                             USD+ based on the latest (ever-increasing) index, so the total yield is the
                                             same.
                                         </label>
                                     </v-row>
-                                </v-col>
+                                </v-col> -->
 
                                 <v-col v-if="$wu.isFull()">
                                     <v-row justify="end" align="start">
@@ -422,7 +422,7 @@ export default {
     },
 
     activeTabUsdPlus: function () {
-      this.trackClick({action: 'open-usdplustab-action-click', event_category: 'Dashboard USD+', event_label: 'Open USD+ Tab', value: 1 });
+      this.trackClick({action: 'open-usdplustab-action-click', event_category: 'Dashboard Sion', event_label: 'Open Sion Tab', value: 1 });
 
       return {
         'tab-button': this.tab === 2,

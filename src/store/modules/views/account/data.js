@@ -91,6 +91,8 @@ const actions = {
 
         try {
             asset = await web3.contracts.asset.methods.balanceOf(getters.account).call();
+            console.log('got asset');
+            console.log(asset);
             originAsset = asset;
             asset = asset ? web3.web3.utils.fromWei(asset, assetDecimals === 18 ? 'ether' : 'mwei') : null;
         } catch (e) {
@@ -101,7 +103,7 @@ const actions = {
         try {
             usdPlus = await web3.contracts.usdPlus.methods.balanceOf(getters.account).call();
             originUsdPlus = usdPlus;
-            usdPlus = usdPlus ? web3.web3.utils.fromWei(usdPlus, 'mwei') : usdPlus;
+            usdPlus = usdPlus ? web3.web3.utils.fromWei(usdPlus, 'ether') : usdPlus;
         } catch (e) {
             usdPlus = getters.balance.usdPlus;
             originUsdPlus = getters.originalBalance.usdPlus

@@ -34,7 +34,7 @@ export default {
         },
         name: {
           type: String,
-          default: "USD+",
+          default: "Sion",
         },
         type: {
           type: String,

@@ -363,13 +363,13 @@ export default {
         this.gasAmountInUsd = null;
 
         this.currencies.push({
-            id: 'usdc',
-            title: 'USDC',
+            id: 'usdt',
+            title: 'USDT',
             image: require('@/assets/currencies/usdc.png')
         });
         this.currencies.push({
-            id: 'usdPlus',
-            title: 'USD+',
+            id: 'sion',
+            title: 'Sion+',
             image: require('@/assets/currencies/usdPlus.svg')
         });
 

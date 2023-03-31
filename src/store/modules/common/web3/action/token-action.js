@@ -18,14 +18,14 @@ const actions = {
                     options: {
                         address: rootState.web3.contracts.usdPlus.options.address,
                         symbol: process.env.VUE_APP_USD_TOKEN_NAME,
-                        decimals: 6,
+                        decimals: 18,
                         image: UsdPlusImage.image,
                     },
                 },
             })
             .then((success) => {
                 if (success) {
-                    console.log('USD+ successfully added to wallet!')
+                    console.log('Sion successfully added to wallet!')
                 } else {
                     throw new Error('Something went wrong.')
                 }
@@ -43,7 +43,7 @@ const actions = {
                     options: {
                         address: rootState.web3.contracts.wUsdPlus.options.address,
                         symbol: process.env.VUE_APP_WRAPPED_USD_TOKEN_NAME,
-                        decimals: 6,
+                        decimals: 18,
                         image: WrappedUsdPlusImage.image,
                     },
                 },
@@ -68,7 +68,7 @@ const actions = {
                     options: {
                         address: rootState.web3.contracts.insurance.polygon_token.options.address,
                         symbol: 'USD+ INS',
-                        decimals: 6,
+                        decimals: 18,
                         image: PolygonInsurance.image,
                     },
                 },
